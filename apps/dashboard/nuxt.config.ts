@@ -11,7 +11,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL || 'file:../../dev.db',
     ollamaHost: process.env.OLLAMA_HOST || 'http://localhost:11434',
-    ollamaModel: process.env.OLLAMA_MODEL || 'mistral-nemo'
+    ollamaModel: process.env.OLLAMA_MODEL || 'mistral-nemo',
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    resendFromEmail: process.env.RESEND_FROM_EMAIL || '',
+    public: {
+      digestRecipientOptions: process.env.DIGEST_RECIPIENT_OPTIONS || ''
+    }
   },
 
   compatibilityDate: '2025-01-15',

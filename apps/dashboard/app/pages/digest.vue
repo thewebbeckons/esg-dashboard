@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DigestResult } from '@esg/core'
+import type { DigestResult, DigestSendInput, DigestSendResult } from '@esg/core'
 
 // Default to last 7 days
 const now = new Date()
@@ -13,11 +13,29 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 const activeTab = ref('html')
 const copied = ref(false)
+const sendModalOpen = ref(false)
+const recipients = ref<string[]>([])
+const sendError = ref<string | null>(null)
+const sendSuccess = ref<string | null>(null)
+const isSending = ref(false)
+const lastPreviewRange = ref<{ startIso: string; endIso: string } | null>(null)
+
+const runtimeConfig = useRuntimeConfig()
+const recipientOptions = computed(() => {
+  const raw = runtimeConfig.public?.digestRecipientOptions || ''
+  return raw
+    .split(',')
+    .map(option => option.trim())
+    .filter(Boolean)
+})
 
 async function generatePreview() {
   isLoading.value = true
   error.value = null
   digest.value = null
+  sendSuccess.value = null
+  sendError.value = null
+  lastPreviewRange.value = null
 
   try {
     const startIso = new Date(startDate.value || '').toISOString()
@@ -27,6 +45,7 @@ async function generatePreview() {
       method: 'POST',
       body: { startIso, endIso }
     })
+    lastPreviewRange.value = { startIso, endIso }
   } catch (err: unknown) {
     error.value = err instanceof Error ? err.message : 'Failed to generate digest'
   } finally {
@@ -43,6 +62,59 @@ async function copyToClipboard(content: string) {
     }, 2000)
   } catch {
     error.value = 'Failed to copy to clipboard'
+  }
+}
+
+function toggleRecipient(option: string) {
+  const index = recipients.value.indexOf(option)
+  if (index === -1) {
+    recipients.value.push(option)
+  } else {
+    recipients.value.splice(index, 1)
+  }
+}
+
+function openSendModal() {
+  sendError.value = null
+  sendSuccess.value = null
+  sendModalOpen.value = true
+}
+
+async function sendDigest() {
+  sendError.value = null
+  sendSuccess.value = null
+
+  if (!lastPreviewRange.value) {
+    sendError.value = 'Generate a preview before sending.'
+    return
+  }
+
+  const to = recipients.value.map(email => email.trim()).filter(Boolean)
+  if (!to.length) {
+    sendError.value = 'Add at least one recipient.'
+    return
+  }
+
+  isSending.value = true
+
+  try {
+    const payload: DigestSendInput = {
+      startIso: lastPreviewRange.value.startIso,
+      endIso: lastPreviewRange.value.endIso,
+      to
+    }
+
+    await $fetch<DigestSendResult>('/api/digests/send', {
+      method: 'POST',
+      body: payload
+    })
+
+    sendSuccess.value = `Digest sent to ${to.join(', ')}`
+    sendModalOpen.value = false
+  } catch (err: unknown) {
+    sendError.value = err instanceof Error ? err.message : 'Failed to send digest'
+  } finally {
+    isSending.value = false
   }
 }
 
@@ -102,6 +174,15 @@ const tabs = [
       closable
       @close="error = null"
     />
+    <UAlert
+      v-if="sendSuccess"
+      color="success"
+      icon="i-lucide-check-circle"
+      :title="sendSuccess"
+      class="mb-6"
+      closable
+      @close="sendSuccess = null"
+    />
 
     <!-- Digest Preview -->
     <template v-if="digest">
@@ -136,20 +217,29 @@ const tabs = [
       <!-- Tabs -->
       <UCard>
         <template #header>
-          <div class="flex items-center justify-between">
+          <div class="flex flex-wrap items-center justify-between gap-3">
             <UTabs
               v-model="activeTab"
               :items="tabs"
             />
 
-            <UButton
-              :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'"
-              :color="copied ? 'success' : 'neutral'"
-              variant="ghost"
-              @click="copyToClipboard(activeTab === 'html' ? digest.html : digest.text)"
-            >
-              {{ copied ? 'Copied!' : 'Copy' }}
-            </UButton>
+            <div class="flex items-center gap-2">
+              <UButton
+                :icon="copied ? 'i-lucide-check' : 'i-lucide-copy'"
+                :color="copied ? 'success' : 'neutral'"
+                variant="ghost"
+                @click="copyToClipboard(activeTab === 'html' ? digest.html : digest.text)"
+              >
+                {{ copied ? 'Copied!' : 'Copy' }}
+              </UButton>
+              <UButton
+                icon="i-lucide-send"
+                color="primary"
+                @click="openSendModal"
+              >
+                Send Email
+              </UButton>
+            </div>
           </div>
         </template>
 
@@ -191,5 +281,94 @@ const tabs = [
         Select a date range and click "Generate Preview" to create an email digest.
       </p>
     </UCard>
+
+    <UModal v-model:open="sendModalOpen">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-green-100 dark:bg-green-900 rounded w-9 h-9 flex items-center justify-center">
+            <UIcon
+              name="i-lucide-send"
+              class="w-5 h-5 text-green-600 dark:text-green-400"
+            />
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold">
+              Send Digest Email
+            </h3>
+            <p
+              v-if="digest"
+              class="text-sm text-gray-500"
+            >
+              {{ digest.stats.dateRange }}
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <template #body>
+        <div class="space-y-4">
+          <UAlert
+            v-if="sendError"
+            color="error"
+            icon="i-lucide-alert-circle"
+            :title="sendError"
+            closable
+            @close="sendError = null"
+          />
+
+          <UFormField
+            label="To"
+            required
+          >
+            <UInputTags
+              v-model="recipients"
+              placeholder="Add recipient emails"
+              :add-on-paste="true"
+              :add-on-blur="true"
+            />
+          </UFormField>
+
+          <div
+            v-if="recipientOptions.length"
+            class="space-y-2"
+          >
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Quick add
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                v-for="option in recipientOptions"
+                :key="option"
+                size="xs"
+                :variant="recipients.includes(option) ? 'solid' : 'soft'"
+                :color="recipients.includes(option) ? 'primary' : 'neutral'"
+                @click="toggleRecipient(option)"
+              >
+                {{ option }}
+              </UButton>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <UButton
+            variant="ghost"
+            @click="sendModalOpen = false"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            icon="i-lucide-send"
+            :loading="isSending"
+            :disabled="!recipients.length"
+            @click="sendDigest"
+          >
+            Send Email
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </UContainer>
 </template>

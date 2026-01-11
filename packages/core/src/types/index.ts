@@ -80,6 +80,14 @@ export const DigestPreviewSchema = z.object({
 })
 export type DigestPreviewInput = z.infer<typeof DigestPreviewSchema>
 
+export const DigestSendSchema = z.object({
+  startIso: z.string().datetime(),
+  endIso: z.string().datetime(),
+  to: z.array(z.string().trim().email()).min(1),
+  subject: z.string().trim().min(1).max(255).optional()
+})
+export type DigestSendInput = z.infer<typeof DigestSendSchema>
+
 export interface DigestArticle {
   title: string
   url: string
@@ -104,6 +112,12 @@ export interface DigestResult {
     topicCount: number
     dateRange: string
   }
+}
+
+export interface DigestSendResult {
+  success: true
+  id: string | null
+  stats: DigestResult['stats']
 }
 
 // Topic types
