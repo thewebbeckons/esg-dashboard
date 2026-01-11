@@ -1,0 +1,126 @@
+// ESG News Digest - Prisma Schema
+// SQLite database for local-first operation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Source: A news source to scrape (RSS feed, HTML page, or browser-rendered)
+model Source {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // "rss" | "html" | "browser"
+  enabled   Boolean  @default(true)
+  seedUrls  String   // JSON array of strings
+  selectors String?  // JSON: { listPageUrl, linkSelector, titleSelector?, dateSelector? }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items Item[]
+
+  @@index([enabled])
+}
+
+// Run: A scrape/summarize job execution
+model Run {
+  id          String    @id @default(cuid())
+  status      String    @default("queued") // "queued" | "running" | "succeeded" | "failed" | "canceled"
+  type        String    @default("discovery") // "discovery" | "reanalysis"
+  sourceIds   String?   // JSON array of source IDs to process (null = all enabled)
+  itemIds     String?   // JSON array of item IDs for reanalysis runs
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  triggeredBy String?   // e.g., "dashboard", "scheduler"
+  createdAt   DateTime  @default(now())
+
+  events RunEvent[]
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// RunEvent: Log events during a run for live monitoring
+model RunEvent {
+  id      String   @id @default(cuid())
+  runId   String
+  ts      DateTime @default(now())
+  level   String   // "debug" | "info" | "warn" | "error"
+  type    String   // "DISCOVER" | "FETCH" | "EXTRACT" | "CLASSIFY" | "SUMMARIZE" | "DONE" | "ERROR"
+  message String
+  data    String?  // JSON nullable
+
+  run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([runId, ts])
+}
+
+// Item: A discovered article URL
+model Item {
+  id           String    @id @default(cuid())
+  sourceId     String
+  url          String
+  canonicalUrl String    @unique
+  discoveredAt DateTime  @default(now())
+  fetchedAt    DateTime?
+  status       String    @default("new") // "new" | "fetched" | "extracted" | "analyzed" | "skipped" | "failed"
+  errorMessage String?
+
+  source   Source    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  article  Article?
+  analysis Analysis?
+
+  @@index([sourceId])
+  @@index([status])
+  @@index([discoveredAt])
+}
+
+// Article: Extracted article content
+model Article {
+  id          String    @id @default(cuid())
+  itemId      String    @unique
+  title       String
+  author      String?
+  publishedAt DateTime?
+  html        String?   // Raw HTML (optional storage)
+  text        String    // Extracted readable text
+  language    String?
+  createdAt   DateTime  @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+// Analysis: LLM-generated classification and summary
+model Analysis {
+  id             String   @id @default(cuid())
+  itemId         String   @unique
+  relevant       Boolean
+  topics         String   // JSON array of topic slugs
+  importance     Int      // 0-100
+  summaryBullets String   // JSON array of 2-4 bullet points
+  whyItMatters   String
+  modelVersion   String   // e.g., "mistral-nemo:latest"
+  createdAt      DateTime @default(now())
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([relevant])
+  @@index([importance])
+}
+
+// Topic: Configurable topic taxonomy for keyword prefiltering
+model Topic {
+  id       String  @id @default(cuid())
+  slug     String  @unique
+  name     String
+  keywords String  // JSON array of keywords
+  enabled  Boolean @default(true)
+
+  @@index([enabled])
+}

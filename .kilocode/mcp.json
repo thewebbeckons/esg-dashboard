@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "nuxt": {
+      "type": "streamable-http",
+      "url": "https://nuxt.com/mcp"
+    },
+    "nuxt-ui": {
+      "type": "streamable-http",
+      "url": "https://ui.nuxt.com/mcp"
+    }
+  }
+}

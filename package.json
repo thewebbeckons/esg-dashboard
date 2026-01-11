@@ -1,0 +1,27 @@
+{
+  "name": "esg-dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @esg/dashboard dev",
+    "build": "pnpm -r build",
+    "worker": "pnpm --filter @esg/worker start",
+    "worker:dev": "pnpm --filter @esg/worker dev",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset --force",
+    "postinstall": "prisma generate"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "prisma": "^6.2.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@10.26.1"
+}
