@@ -3,25 +3,47 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @esg/dashboard dev",
-    "build": "pnpm -r build",
-    "worker": "pnpm --filter @esg/worker start",
-    "worker:dev": "pnpm --filter @esg/worker dev",
-    "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck",
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && nuxt prepare"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^1.0.0",
+    "@iconify-json/lucide": "^1.2.82",
+    "@iconify-json/simple-icons": "^1.2.63",
+    "@mozilla/readability": "^0.5.0",
+    "@nuxt/ui": "^4.3.0",
+    "@prisma/client": "^6.2.1",
+    "ai": "^4.0.0",
+    "cheerio": "^1.0.0",
+    "jsdom": "^25.0.1",
+    "nuxt": "^4.2.2",
+    "resend": "^3.2.0",
+    "rss-parser": "^3.13.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@nuxt/eslint": "^1.12.1",
+    "@nuxt/test-utils": "3.23.0",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^22.14.0",
+    "@vue/test-utils": "^2.4.6",
+    "eslint": "^9.39.2",
+    "happy-dom": "^20.1.0",
     "prisma": "^6.2.1",
     "tsx": "^4.19.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16",
+    "vue-tsc": "^3.2.1"
   },
   "packageManager": "pnpm@10.28.0"
 }

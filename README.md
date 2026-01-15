@@ -4,18 +4,19 @@ A local-first ESG news scraper and summarizer with a Nuxt 4 dashboard and worker
 
 ## Features
 
-- 📰 **Multi-source support**: RSS feeds, HTML pages, and Playwright browser scraping
-- 🤖 **LLM-powered analysis**: Classify and summarize articles using Ollama (or mock fallback)
+- 📰 **Multi-source support**: RSS feeds and HTML pages
+- 🤖 **LLM-powered analysis**: Classify and summarize articles using OpenAI (or Ollama/mock fallback)
 - 📊 **Real-time monitoring**: Watch scrape jobs with live event streaming (SSE)
 - 📧 **Email digests**: Generate HTML/text digests grouped by topic
-- 🗄️ **Local-first**: SQLite database, no cloud services required
+- 🗄️ **Postgres-backed**: Prisma Postgres (or any Postgres) database
 - 🎨 **Modern UI**: Nuxt 4 + Nuxt UI v4 dashboard
 
 ## Prerequisites
 
 - **Node.js** 20+
 - **pnpm** 10+
-- **Ollama** (optional, for LLM analysis)
+- **Postgres** (Prisma Postgres or local Postgres)
+- **OpenAI API key** (for LLM analysis, or Ollama as optional fallback)
 
 ## Quick Start
 
@@ -40,16 +41,18 @@ pnpm db:seed      # Seed with example sources and topics
 Create `.env` file with minimal configuration:
 
 ```bash
-echo 'DATABASE_URL="file:./dev.db"' > .env
+echo 'DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE"' > .env
 ```
 
 Optional environment variables:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE"
+OPENAI_API_KEY="your-openai-api-key"
+OPENAI_MODEL="gpt-4o-mini"
+LLM_PROVIDER="openai"
 OLLAMA_HOST="http://localhost:11434"
 OLLAMA_MODEL="mistral-nemo"
-PLAYWRIGHT_ENABLED=false
 ```
 
 ### 4. Start the Dashboard
@@ -104,10 +107,6 @@ The worker polls for queued jobs and processes them automatically.
    - **Link Selector**: CSS selector for article links (e.g., `article a.headline`)
    - **Title Selector**: Optional, for extracting titles from list page
    - **Date Selector**: Optional, for extracting dates
-
-### Browser (Playwright)
-
-For JavaScript-rendered pages, use `browser` source type. Requires `PLAYWRIGHT_ENABLED=true` in `.env`.
 
 ## Project Structure
 
@@ -182,11 +181,13 @@ If Ollama is not available, the worker uses a mock LLM client that provides basi
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | `file:./dev.db` | SQLite database path |
+| `DATABASE_URL` | `postgresql://...` | Postgres database connection |
+| `OPENAI_API_KEY` | `""` | OpenAI API key for Vercel AI SDK |
+| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model name |
+| `LLM_PROVIDER` | `openai` | `openai` \| `ollama` \| `mock` |
 | `OLLAMA_HOST` | `http://localhost:11434` | Ollama API URL |
 | `OLLAMA_MODEL` | `mistral-nemo` | LLM model name |
 | `OLLAMA_TIMEOUT_MS` | `120000` | LLM request timeout |
-| `PLAYWRIGHT_ENABLED` | `false` | Enable browser scraping |
 | `WORKER_POLL_INTERVAL_MS` | `2000` | Worker poll frequency |
 | `MAX_CONCURRENT_FETCHES` | `4` | Parallel HTTP requests |
 
@@ -197,7 +198,7 @@ If Ollama is not available, the worker uses a mock LLM client that provides basi
 **Problem**: Articles show "Extraction failed" or have missing content.
 
 **Solutions**:
-1. Check if page requires JavaScript → use `browser` source type
+1. Check if page requires JavaScript → use an RSS feed or HTML list page
 2. Verify URL is accessible (not paywalled)
 3. Check if site blocks bots (User-Agent issues)
 
@@ -206,10 +207,11 @@ If Ollama is not available, the worker uses a mock LLM client that provides basi
 **Problem**: All articles show "mock-llm" as model version.
 
 **Solutions**:
-1. Ensure Ollama is running: `ollama serve`
-2. Verify model is pulled: `ollama list`
-3. Check `OLLAMA_HOST` in `.env`
-4. Test connectivity: `curl http://localhost:11434/api/tags`
+1. Ensure `OPENAI_API_KEY` is set in `.env`
+2. If using Ollama, ensure it's running: `ollama serve`
+3. Verify model is pulled: `ollama list`
+4. Check `OLLAMA_HOST` in `.env`
+5. Test connectivity: `curl http://localhost:11434/api/tags`
 
 ### Database Issues
 
