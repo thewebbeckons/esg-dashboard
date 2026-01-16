@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { DEFAULT_TOPICS } from '@esg/core'
+import { DEFAULT_TOPICS } from '../lib/taxonomy.js'
 
 const prisma = new PrismaClient()
 

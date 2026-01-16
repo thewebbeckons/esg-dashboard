@@ -1,20 +1,21 @@
 // ESG News Digest - Prisma Schema
-// SQLite database for local-first operation
+// Postgres database for cloud deployment
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
-// Source: A news source to scrape (RSS feed, HTML page, or browser-rendered)
+// Source: A news source to scrape (RSS feed or HTML page)
 model Source {
   id        String   @id @default(cuid())
   name      String
-  type      String   // "rss" | "html" | "browser"
+  type      String   // "rss" | "html"
   enabled   Boolean  @default(true)
   seedUrls  String   // JSON array of strings
   selectors String?  // JSON: { listPageUrl, linkSelector, titleSelector?, dateSelector? }
@@ -28,15 +29,16 @@ model Source {
 
 // Run: A scrape/summarize job execution
 model Run {
-  id          String    @id @default(cuid())
-  status      String    @default("queued") // "queued" | "running" | "succeeded" | "failed" | "canceled"
-  type        String    @default("discovery") // "discovery" | "reanalysis"
-  sourceIds   String?   // JSON array of source IDs to process (null = all enabled)
-  itemIds     String?   // JSON array of item IDs for reanalysis runs
-  startedAt   DateTime?
-  finishedAt  DateTime?
-  triggeredBy String?   // e.g., "dashboard", "scheduler"
-  createdAt   DateTime  @default(now())
+  id            String    @id @default(cuid())
+  status        String    @default("queued") // "queued" | "running" | "succeeded" | "failed" | "canceled"
+  type          String    @default("discovery") // "discovery" | "reanalysis"
+  sourceIds     String?   // JSON array of source IDs to process (null = all enabled)
+  itemIds       String?   // JSON array of item IDs for reanalysis runs
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  triggeredBy   String?   // e.g., "dashboard", "scheduler"
+  workflowRunId String?   // Vercel Workflow run ID for tracking
+  createdAt     DateTime  @default(now())
 
   events RunEvent[]
 
