@@ -4,7 +4,7 @@
  * This pipeline runs as an async function, compatible with Vercel serverless.
  */
 
-import type { Item } from '@prisma/client'
+import type { Item } from '@esg/db'
 import type { TopicConfig } from '@esg/core'
 import { usePrisma } from '../utils/prisma'
 import { discoverUrlsFromSource } from './steps/discovery'

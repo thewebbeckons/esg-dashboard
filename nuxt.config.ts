@@ -2,9 +2,22 @@
 import { fileURLToPath } from 'node:url'
 
 const libPath = fileURLToPath(new URL('./lib', import.meta.url))
+const prismaPath = fileURLToPath(new URL('./prisma/generated/prisma/client.ts', import.meta.url))
 
 export default defineNuxtConfig({
-  modules: ['@nuxt/eslint', '@nuxt/ui'],
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@onmax/nuxt-better-auth'],
+
+  auth: {
+    redirects: {
+      login: '/login',
+      guest: '/'
+    }
+  },
+
+  routeRules: {
+    '/login': { auth: 'guest' },
+    '/**': { auth: 'user' }
+  },
 
   devtools: {
     enabled: true
@@ -19,7 +32,8 @@ export default defineNuxtConfig({
     '@esg/core/url': `${libPath}/url`,
     '@esg/core/extraction': `${libPath}/extraction`,
     '@esg/core/taxonomy': `${libPath}/taxonomy`,
-    '@esg/core/prisma': `${libPath}/prisma`
+    '@esg/core/prisma': `${libPath}/prisma`,
+    '@esg/db': prismaPath
   },
 
   runtimeConfig: {
@@ -38,6 +52,12 @@ export default defineNuxtConfig({
   nitro: {
     experimental: {
       asyncContext: true
+    },
+    alias: {
+      '@esg/db': prismaPath
+    },
+    externals: {
+      external: ['@prisma/adapter-pg', '@prisma/client']
     }
   },
 

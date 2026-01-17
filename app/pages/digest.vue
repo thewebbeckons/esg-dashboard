@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import type { DigestResult, DigestSendInput, DigestSendResult } from '@esg/core'
+import { CalendarDate, DateFormatter, getLocalTimeZone, today } from '@internationalized/date'
+import type { DateValue } from '@internationalized/date'
+
+// Date formatter
+const df = new DateFormatter('en-US', {
+  dateStyle: 'medium'
+})
 
 // Default to last 7 days
-const now = new Date()
-const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+const now = today(getLocalTimeZone())
+const weekAgo = now.subtract({ weeks: 1 })
 
-const startDate = ref(weekAgo.toISOString().split('T')[0])
-const endDate = ref(now.toISOString().split('T')[0])
+const startDate = ref(weekAgo) as Ref<DateValue>
+const endDate = ref(now) as Ref<DateValue>
 
 const digest = ref<DigestResult | null>(null)
 const isLoading = ref(false)
@@ -38,8 +45,11 @@ async function generatePreview() {
   lastPreviewRange.value = null
 
   try {
-    const startIso = new Date(startDate.value || '').toISOString()
-    const endIso = new Date(endDate.value ? `${endDate.value}T23:59:59` : '').toISOString()
+    const startIso = startDate.value.toDate(getLocalTimeZone()).toISOString()
+    const end = endDate.value.toDate(getLocalTimeZone())
+    // Set to end of day
+    end.setHours(23, 59, 59, 999)
+    const endIso = end.toISOString()
 
     digest.value = await $fetch<DigestResult>('/api/digests/preview', {
       method: 'POST',
@@ -139,19 +149,25 @@ const tabs = [
     <UCard class="mb-6">
       <div class="flex flex-wrap items-end gap-4">
         <UFormField label="Start Date">
-          <UInput
-            v-model="startDate"
-            type="date"
-            class="w-48"
-          />
+          <UPopover>
+            <UButton icon="i-lucide-calendar" color="neutral" variant="subtle" class="w-48 justify-start">
+              {{ df.format(startDate.toDate(getLocalTimeZone())) }}
+            </UButton>
+            <template #content>
+              <UCalendar v-model="startDate" class="p-2" />
+            </template>
+          </UPopover>
         </UFormField>
 
         <UFormField label="End Date">
-          <UInput
-            v-model="endDate"
-            type="date"
-            class="w-48"
-          />
+          <UPopover>
+            <UButton icon="i-lucide-calendar" color="neutral" variant="subtle" class="w-48 justify-start">
+              {{ df.format(endDate.toDate(getLocalTimeZone())) }}
+            </UButton>
+            <template #content>
+              <UCalendar v-model="endDate" class="p-2" />
+            </template>
+          </UPopover>
         </UFormField>
 
         <UButton
@@ -189,7 +205,7 @@ const tabs = [
       <!-- Stats -->
       <div class="grid grid-cols-3 gap-4 mb-6">
         <UCard class="text-center">
-          <div class="text-3xl font-bold text-green-600">
+          <div class="text-3xl font-bold text-primary-600">
             {{ digest.stats.totalArticles }}
           </div>
           <div class="text-sm text-gray-500">
@@ -258,7 +274,7 @@ const tabs = [
         <!-- Plain Text Preview -->
         <div
           v-else
-          class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap overflow-auto max-h-[600px]"
+          class="bg-neutral-50 dark:bg-neutral-900 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap overflow-auto max-h-[600px]"
         >
           {{ digest.text }}
         </div>
@@ -285,10 +301,10 @@ const tabs = [
     <UModal v-model:open="sendModalOpen">
       <template #header>
         <div class="flex items-center gap-3">
-          <div class="p-2 bg-green-100 dark:bg-green-900 rounded w-9 h-9 flex items-center justify-center">
+          <div class="p-2 bg-primary-100 dark:bg-primary-900 rounded w-9 h-9 flex items-center justify-center">
             <UIcon
               name="i-lucide-send"
-              class="w-5 h-5 text-green-600 dark:text-green-400"
+              class="w-5 h-5 text-primary-600 dark:text-primary-400"
             />
           </div>
           <div>

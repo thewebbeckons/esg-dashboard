@@ -2,7 +2,7 @@
  * URL discovery step - discovers article URLs from RSS feeds and HTML pages
  */
 
-import type { Source } from '@prisma/client'
+import type { Source } from '@esg/db'
 import { canonicalizeUrl, resolveUrl } from '@esg/core'
 import Parser from 'rss-parser'
 import * as cheerio from 'cheerio'

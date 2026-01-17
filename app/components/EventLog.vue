@@ -50,11 +50,11 @@ function formatTime(ts: string) {
         </h3>
         <div
           v-if="isLive"
-          class="flex items-center gap-2 text-sm text-green-500"
+          class="flex items-center gap-2 text-sm text-primary-500"
         >
           <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-primary-500" />
           </span>
           Live
         </div>
@@ -65,7 +65,7 @@ function formatTime(ts: string) {
       <div
         v-for="event in events"
         :key="event.id"
-        class="flex gap-3 py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+        class="flex gap-3 py-1 px-2 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded"
       >
         <span class="text-gray-400 shrink-0">{{ formatTime(event.ts) }}</span>
         <UIcon

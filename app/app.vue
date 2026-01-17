@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { user, loggedIn, signOut, ready } = useUserSession()
+
 useHead({
   meta: [
     { name: 'viewport', content: 'width=device-width, initial-scale=1' }
@@ -24,6 +26,10 @@ const navigation = [
   { label: 'Articles', to: '/articles', icon: 'i-lucide-newspaper' },
   { label: 'Digest', to: '/digest', icon: 'i-lucide-mail' }
 ]
+
+async function handleLogout() {
+  await signOut({ redirect: '/login' })
+}
 </script>
 
 <template>
@@ -36,11 +42,30 @@ const navigation = [
         >
           <UIcon
             name="i-lucide-leaf"
-            class="w-5 h-5 text-green-600"
+            class="w-5 h-5 text-primary-500"
           />
           ESG News Digest
         </NuxtLink>
-        <UNavigationMenu :items="navigation" />
+        <UNavigationMenu
+          v-if="loggedIn"
+          :items="navigation"
+        />
+      </template>
+      <template #right>
+        <template v-if="ready && loggedIn">
+          <span class="text-sm text-gray-600 dark:text-gray-400">
+            {{ user?.name || user?.email }}
+          </span>
+          <UButton
+            variant="ghost"
+            color="neutral"
+            icon="i-lucide-log-out"
+            size="sm"
+            @click="handleLogout"
+          >
+            Logout
+          </UButton>
+        </template>
       </template>
     </UHeader>
 

@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@esg/db'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 // Singleton pattern for Prisma client
 let prisma: PrismaClient | undefined
@@ -8,7 +9,9 @@ let prisma: PrismaClient | undefined
  */
 export function getPrisma(): PrismaClient {
   if (!prisma) {
+    const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
     prisma = new PrismaClient({
+      adapter,
       log: process.env.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['warn', 'error']
     })
   }
@@ -27,3 +30,4 @@ export async function disconnectPrisma(): Promise<void> {
 
 // Re-export types
 export { PrismaClient }
+

@@ -16,10 +16,10 @@ const { data: stats } = await useFetch('/api/stats')
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <UCard>
         <div class="flex items-center gap-4">
-          <div class="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+          <div class="p-3 bg-primary-100 dark:bg-primary-900 rounded-lg">
             <UIcon
               name="i-lucide-rss"
-              class="w-6 h-6 text-green-600 dark:text-green-400"
+              class="w-6 h-6 text-primary-600 dark:text-primary-400"
             />
           </div>
           <div>

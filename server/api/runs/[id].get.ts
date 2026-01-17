@@ -32,11 +32,38 @@ export default defineEventHandler(async (event) => {
     eventCounts.map(e => [e.type, e._count])
   )
 
+  // Get specific event counts for detailed stats
+  const [relevantEvents, skippedEvents, analyzedEvents] = await Promise.all([
+    prisma.runEvent.count({
+      where: {
+        runId: id,
+        type: 'SUMMARIZE',
+        message: { contains: 'relevant=true' }
+      }
+    }),
+    prisma.runEvent.count({
+      where: {
+        runId: id,
+        type: 'EXTRACT',
+        level: 'warn'
+      }
+    }),
+    prisma.runEvent.count({
+      where: {
+        runId: id,
+        type: 'SUMMARIZE'
+      }
+    })
+  ])
+
   return {
     ...run,
     sourceIds: run.sourceIds ? JSON.parse(run.sourceIds) as string[] : null,
     itemIds: run.itemIds ? JSON.parse(run.itemIds) as string[] : null,
     eventCount: run._count.events,
-    eventSummary
+    eventSummary,
+    relevantCount: relevantEvents,
+    skippedCount: skippedEvents,
+    analyzedCount: analyzedEvents
   }
 })

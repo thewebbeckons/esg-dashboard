@@ -2,23 +2,22 @@
 // Postgres database for cloud deployment
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "./generated/prisma"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  provider = "postgresql"
 }
 
 // Source: A news source to scrape (RSS feed or HTML page)
 model Source {
   id        String   @id @default(cuid())
   name      String
-  type      String   // "rss" | "html"
+  type      String // "rss" | "html"
   enabled   Boolean  @default(true)
-  seedUrls  String   // JSON array of strings
-  selectors String?  // JSON: { listPageUrl, linkSelector, titleSelector?, dateSelector? }
+  seedUrls  String // JSON array of strings
+  selectors String? // JSON: { listPageUrl, linkSelector, titleSelector?, dateSelector? }
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -32,12 +31,12 @@ model Run {
   id            String    @id @default(cuid())
   status        String    @default("queued") // "queued" | "running" | "succeeded" | "failed" | "canceled"
   type          String    @default("discovery") // "discovery" | "reanalysis"
-  sourceIds     String?   // JSON array of source IDs to process (null = all enabled)
-  itemIds       String?   // JSON array of item IDs for reanalysis runs
+  sourceIds     String? // JSON array of source IDs to process (null = all enabled)
+  itemIds       String? // JSON array of item IDs for reanalysis runs
   startedAt     DateTime?
   finishedAt    DateTime?
-  triggeredBy   String?   // e.g., "dashboard", "scheduler"
-  workflowRunId String?   // Vercel Workflow run ID for tracking
+  triggeredBy   String? // e.g., "dashboard", "scheduler"
+  workflowRunId String? // Vercel Workflow run ID for tracking
   createdAt     DateTime  @default(now())
 
   events RunEvent[]
@@ -52,10 +51,10 @@ model RunEvent {
   id      String   @id @default(cuid())
   runId   String
   ts      DateTime @default(now())
-  level   String   // "debug" | "info" | "warn" | "error"
-  type    String   // "DISCOVER" | "FETCH" | "EXTRACT" | "CLASSIFY" | "SUMMARIZE" | "DONE" | "ERROR"
+  level   String // "debug" | "info" | "warn" | "error"
+  type    String // "DISCOVER" | "FETCH" | "EXTRACT" | "CLASSIFY" | "SUMMARIZE" | "DONE" | "ERROR"
   message String
-  data    String?  // JSON nullable
+  data    String? // JSON nullable
 
   run Run @relation(fields: [runId], references: [id], onDelete: Cascade)
 
@@ -90,8 +89,8 @@ model Article {
   title       String
   author      String?
   publishedAt DateTime?
-  html        String?   // Raw HTML (optional storage)
-  text        String    // Extracted readable text
+  html        String? // Raw HTML (optional storage)
+  text        String // Extracted readable text
   language    String?
   createdAt   DateTime  @default(now())
 
@@ -103,11 +102,11 @@ model Analysis {
   id             String   @id @default(cuid())
   itemId         String   @unique
   relevant       Boolean
-  topics         String   // JSON array of topic slugs
-  importance     Int      // 0-100
-  summaryBullets String   // JSON array of 2-4 bullet points
+  topics         String // JSON array of topic slugs
+  importance     Int // 0-100
+  summaryBullets String // JSON array of 2-4 bullet points
   whyItMatters   String
-  modelVersion   String   // e.g., "mistral-nemo:latest"
+  modelVersion   String // e.g., "mistral-nemo:latest"
   createdAt      DateTime @default(now())
 
   item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
@@ -121,8 +120,68 @@ model Topic {
   id       String  @id @default(cuid())
   slug     String  @unique
   name     String
-  keywords String  // JSON array of keywords
+  keywords String // JSON array of keywords
   enabled  Boolean @default(true)
 
   @@index([enabled])
+}
+
+// ===== AUTHENTICATION (Better Auth) =====
+
+// Auth: User accounts
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+}
+
+// Auth: Active sessions
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Auth: OAuth provider accounts (and password credentials)
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// Auth: Email verification tokens
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

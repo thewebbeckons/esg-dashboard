@@ -22,6 +22,9 @@ interface RunDetail {
   createdAt: string
   eventCount: number
   eventSummary: Record<string, number>
+  relevantCount: number
+  skippedCount: number
+  analyzedCount: number
   type: string
 }
 
@@ -254,7 +257,13 @@ const totalArticles = computed(() => {
 
 // Count completed articles (DONE events)
 const completedArticles = computed(() => {
-  return run.value?.eventSummary?.DONE || 0
+  if (!run.value) return 0
+  const processed = run.value.analyzedCount || 0
+  const prefiltered = run.value.eventSummary?.PREFILTER || 0
+  const skipped = run.value.skippedCount || 0
+  const failed = run.value.eventSummary?.ERROR || 0
+  
+  return processed + prefiltered + skipped + failed
 })
 
 // Progress as percentage of completed articles
@@ -288,6 +297,7 @@ const estimatedRemaining = computed(() => {
 // Progress text (e.g., "5/20 articles")
 const progressText = computed(() => {
   if (totalArticles.value === 0) {
+    if (run.value?.status === 'succeeded') return 'No articles found'
     return run.value?.status === 'queued' ? 'Waiting...' : 'Discovering...'
   }
   return `${completedArticles.value}/${totalArticles.value} articles`
@@ -381,22 +391,57 @@ const progressText = computed(() => {
       </div>
     </UCard>
 
-    <!-- Event Summary -->
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-      <UCard
-        v-for="(count, type) in run?.eventSummary"
-        :key="type"
-        class="text-center"
-      >
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <UCard class="text-center">
         <UIcon
-          :name="getEventIcon(String(type))"
-          class="w-6 h-6 mx-auto mb-2 text-gray-400"
+          name="i-lucide-download"
+          class="w-6 h-6 mx-auto mb-2 text-primary-500"
         />
         <div class="text-2xl font-bold">
-          {{ count }}
+          {{ totalArticles }}
         </div>
         <div class="text-sm text-gray-500">
-          {{ type }}
+          Fetched
+        </div>
+      </UCard>
+
+      <UCard class="text-center">
+        <UIcon
+          name="i-lucide-check-circle"
+          class="w-6 h-6 mx-auto mb-2 text-blue-500"
+        />
+        <div class="text-2xl font-bold">
+          {{ completedArticles }}
+        </div>
+        <div class="text-sm text-gray-500">
+          Processed
+        </div>
+      </UCard>
+
+      <UCard class="text-center">
+        <UIcon
+          name="i-lucide-alert-circle"
+          class="w-6 h-6 mx-auto mb-2 text-red-500"
+        />
+        <div class="text-2xl font-bold">
+          {{ run?.eventSummary?.ERROR || 0 }}
+        </div>
+        <div class="text-sm text-gray-500">
+          Failed
+        </div>
+      </UCard>
+
+      <UCard class="text-center">
+        <UIcon
+          name="i-lucide-star"
+          class="w-6 h-6 mx-auto mb-2 text-yellow-500"
+        />
+        <div class="text-2xl font-bold">
+          {{ run?.relevantCount || 0 }}
+        </div>
+        <div class="text-sm text-gray-500">
+          Relevant
         </div>
       </UCard>
     </div>
@@ -410,11 +455,11 @@ const progressText = computed(() => {
           </h3>
           <div
             v-if="isStreaming"
-            class="flex items-center gap-2 text-sm text-green-500"
+            class="flex items-center gap-2 text-sm text-primary-500"
           >
             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-primary-500" />
             </span>
             Live
           </div>
@@ -428,7 +473,7 @@ const progressText = computed(() => {
         <div
           v-for="event in events"
           :key="event.id"
-          class="flex gap-3 py-1 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+          class="flex gap-3 py-1 px-2 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded"
         >
           <span class="text-gray-400 shrink-0">{{ formatTime(event.ts) }}</span>
           <UIcon

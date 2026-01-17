@@ -322,7 +322,7 @@ const columns: TableColumn<Article>[] = [
         </template>
 
         <template #expanded="{ row }">
-          <div class="p-4 bg-gray-50 dark:bg-gray-800/50">
+          <div class="p-4 bg-neutral-50 dark:bg-neutral-800/50">
             <div class="space-y-2">
               <div>
                 <span class="text-xs font-medium text-gray-500 dark:text-gray-400">Full Title</span>

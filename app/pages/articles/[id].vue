@@ -184,7 +184,7 @@ function getImportanceColor(importance: number) {
               >
                 <UIcon
                   name="i-lucide-check"
-                  class="w-5 h-5 text-green-500 shrink-0 mt-0.5"
+                  class="w-5 h-5 text-primary-500 shrink-0 mt-0.5"
                 />
                 <span>{{ bullet }}</span>
               </li>

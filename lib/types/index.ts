@@ -96,6 +96,7 @@ export interface DigestArticle {
   summaryBullets: string[]
   whyItMatters: string
   importance: number
+  topics: Array<{ slug: string; name: string }>
 }
 
 export interface DigestSection {
